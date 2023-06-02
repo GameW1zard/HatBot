@@ -1,6 +1,6 @@
 import { Configuration, OpenAIApi } from "openai";
 const configuration = new Configuration({
-    apiKey: ""
+    apiKey: "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"
 });
 const openai = new OpenAIApi(configuration) 
 async function chat(prompt) {

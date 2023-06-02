@@ -1,15 +1,22 @@
+import dotenv from 'dotenv';
+dotenv.config();
 //discord
-const token = "";
+const token = process.env.DISCORD_TOKEN;
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { Data } from "./Database/Data.js";
 import { Write } from './Utils/Writedata.js';
 import { image, chat as _chat } from "./Utils/AI.js";
+const StreamChannelId = '827624206694481961';
 //twitch
+import { ApiClient } from '@twurple/api';
 import { RefreshingAuthProvider } from '@twurple/auth';
 import { Bot, createBotCommand } from '@twurple/easy-bot';
 import { promises as fs } from 'fs';
-const clientId = '';
-const clientSecret = '';
+import { EventSubWsListener } from '@twurple/eventsub-ws';
+import { env } from "process";
+const usrId = '69696969'
+const clientId = env.TWITCH_CLIENT_ID;
+const clientSecret = env.TWITCH_CLIENT_SECRET;
 const tokenData = JSON.parse(await fs.readFile('./Utils/tokens.526128405.json', 'UTF-8'));
 const authProvider = new RefreshingAuthProvider(
 	{
@@ -18,6 +25,7 @@ const authProvider = new RefreshingAuthProvider(
 		onRefresh: async (userId, newTokenData) => await fs.writeFile(`./tokens.${userId}.json`, JSON.stringify(newTokenData, null, 4), 'UTF-8')
 	}
 );
+const apiClient = new ApiClient({ authProvider });
 // begin discord bot
 const client  = new Client({
     intents:[
@@ -80,37 +88,37 @@ client.on(Events.MessageCreate, async message =>{
         Data.Sueboops = ++Data.Sueboops
         Write(Data)
         
-         client.channels.fetch(message.channelId).then(channel => channel.send(`Sue has been booped ${Data.Sueboops} times!`))
+          client.channels.fetch(message.channelId).then(channel => channel.send(`Sue has been booped ${Data.Sueboops} times!`))
     }
  
     if (message.content === "<:suegoy_Pat:911852322433421382>"){
         Data.Suepats = ++Data.Suepats
         Write(Data)
-        client.channels.fetch(message.channelId).then(channel => channel.send(`Sue has been pet ${Data.Suepats} times!`))
+         client.channels.fetch(message.channelId).then(channel => channel.send(`Sue has been pet ${Data.Suepats} times!`))
     }
 
     if (message.content === "<:WizardPat:943349812261158912>"){
         Data.Wizpats = ++Data.Wizpats
         Write(Data)
-        client.channels.fetch(message.channelId).then(channel => channel.send(`W1zard has been pet ${Data.Wizpats} times!`))
+         client.channels.fetch(message.channelId).then(channel => channel.send(`W1zard has been pet ${Data.Wizpats} times!`))
     }
 
     if (message.content === "<:karapat:918331877985755237>"){
         Data.Karapats = ++Data.Karapats
         Write(Data)
-        client.channels.fetch(message.channelId).then(channel => channel.send(`Kara hs been pet ${Data.Karapats} times!`))
+         client.channels.fetch(message.channelId).then(channel => channel.send(`Kara hs been pet ${Data.Karapats} times!`))
     }
 
     if (message.content === "<:icePat:868622699851808828>"){
         Data.Icepats = ++Data.Icepats
         Write(Data)
-        client.channels.fetch(message.channelId).then(channel => channel.send(`Ice has been pet ${Data.Icepats} times!`))
+         client.channels.fetch(message.channelId).then(channel => channel.send(`Ice has been pet ${Data.Icepats} times!`))
     }
 
     if (message.content === "<:mikaPat:928428058229231646>"){
         Data.Mikapats = ++Data.Mikapats
         Write(Data)
-        client.channels.fetch(message.channelId).then(channel => channel.send(`mika has been pet ${Data.Mikapats} times!`))
+         client.channels.fetch(message.channelId).then(channel => channel.send(`mika has been pet ${Data.Mikapats} times!`))
     }
 
     if (message.content === "<:zingypat:907383379039756358>"){
@@ -129,7 +137,7 @@ client.on(Events.MessageCreate, async message =>{
         // exports.Data = Data`,
         // (err) => err ? console.error(err) : console.log("Write success! Check Output folder!"))
         Write(Data)
-        client.channels.fetch(message.channelId).then(channel => channel.send(`Zingy has been pet ${Data.Zingypats} times!`))
+         client.channels.fetch(message.channelId).then(channel => channel.send(`Zingy has been pet ${Data.Zingypats} times!`))
     }
 
     if (message.content === "!help"){
@@ -142,15 +150,24 @@ client.on(Events.MessageCreate, async message =>{
         client.channels.fetch(message.channelId).then(channel => channel.send("Sue is the Cutest!"));
     }
 });
+
 client.on(Events.MessageCreate, async message =>{
-console.log(`${message.author.username}: ${message.content}`)
+//const StreamChannel = await client.channels.fetch("827624206694481961")
+console.log(`%cDISCORD ${message.author.username}: ${message.content}`, 'color: #ADD8E6')
+//StreamChannel.send("hello")
 })
 //end discord bot
 
 //start Twitch bot
+const listener = new EventSubWsListener({ apiClient });
+const onlineSubscription = listener.onStreamOnline(usrId, e =>{
+    console.log(`${e.broadcasterDisplayName} just went live`)
+})
+
+listener.start()
+
 
 await authProvider.addUserForToken(tokenData, ['chat']);
-
 const bot = new Bot(null, {
 	authProvider,
 	channels: ['Game_W1zard'],
@@ -175,7 +192,23 @@ bot.onSubGift(({ broadcasterName, gifterName, userName }) => {
 	bot.say(broadcasterName, `Thanks to @${gifterName} for gifting a subscription to @${userName}!`);
 });
 
-bot.onMessage(async (message) => {console.log(message.text)})
+bot.onMessage(async (message) => {
+    console.log(`%cTWITCH ${message.userDisplayName}: ${message.text}`, 'color: #BF40BF')
+
+    switch (message.text) {
+        case "gamew1Boop":
+            Data.Sueboops = ++Data.Sueboops
+            Write(Data)
+            bot.say(message.broadcasterName, `sue has been booped ${Data.Sueboops} times!`);
+        break;
+        case "timesp5Pat":
+            Data.Suepats = ++Data.Suepats
+            Write(Data)
+            bot.say(message.broadcasterName, `Sue has been pat ${Data.Suepats} times!`)
+        break;
+    }
+
+})
 
 
 
