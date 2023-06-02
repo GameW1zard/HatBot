@@ -1,6 +1,6 @@
 import { Configuration, OpenAIApi } from "openai";
 const configuration = new Configuration({
-    apiKey: "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"
+    apiKey: process.env.OPENAI_KEY,
 });
 const openai = new OpenAIApi(configuration) 
 async function chat(prompt) {
@@ -13,7 +13,8 @@ async function chat(prompt) {
         });
         awnser = response.data.choices[0].message.content;
     } catch (error){
-        answer = "Error: " + error.response.data.error.message;
+        // console.log (error)
+        awnser = "Error: " + error.response.data.error.message;
     }
     // console.log(awnser)
     return awnser;

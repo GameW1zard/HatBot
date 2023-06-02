@@ -3,7 +3,7 @@
             Suepats: 14,
             Wizpats: 5,
             Karapats: 53,
-            Icepats: 4,
+            Icepats: 5,
             Sueboops: 123,
             Mikapats: 3,
             Zingypats: 14,
