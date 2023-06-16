@@ -9,6 +9,7 @@ function Write (Data) {
             Sueboops: ${Data.Sueboops},
             Mikapats: ${Data.Mikapats},
             Zingypats: ${Data.Zingypats},
+            Wizardboops: ${Data.Wizardboops},
         }
 
          const _Data = Data

@@ -5,7 +5,7 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration) 
 async function chat(prompt) {
     let awnser;
-    console.log("prompt recived")
+    //console.log("prompt recived")
     try {
         const response = await openai.createChatCompletion({
             model: 'gpt-3.5-turbo',

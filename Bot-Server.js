@@ -13,7 +13,7 @@ import { Bot, createBotCommand } from '@twurple/easy-bot';
 import { promises as fs } from 'fs';
 import { EventSubWsListener } from '@twurple/eventsub-ws';
 import { env } from "process";
-const usrId = '69696969'
+const usrId = '74719300'
 const clientId = env.TWITCH_CLIENT_ID;
 const clientSecret = env.TWITCH_CLIENT_SECRET;
 const tokenData = JSON.parse(await fs.readFile('./Utils/tokens.526128405.json', 'UTF-8'));
@@ -82,6 +82,34 @@ client.on(Events.MessageCreate, async message =>{
             }
         }
     }
+    if (message.content.substring(0, 4) === "!hat"){
+        //console.log("hat message identified")
+        const prompt = [{role:"user", content: message.content.substring(3)}];
+        var awnser = await _chat(prompt);
+
+        if (awnser.substring(0,6) == "Error:"){
+            client.channels.fetch(message.channelId).then(channel => channel.send("An Error has occured! I cannot awnser"))
+        }
+        else{
+            while (awnser.length > 0) {
+                let chunk = awnser.substring(0, 2000);
+                if (awnser.length > 2000) {
+                    while (chunk.charAt(chunk.length - 1) !== " " && chunk.length > 1){
+                        chunk = chunk.substring(0, chunk.length - 1);
+                    }
+
+                    client.channels.fetch(message.channelId).then(chennel => channel.send(chunk));
+                    awnser = awnser.substring(chunk.length);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                else {
+                    client.channels.fetch(message.channelId).then(channel => channel.send(awnser));
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    awnser = "";
+                }
+            }
+        }
+    }
 
     if (message.content === "<:boop:866867768536334366>"){
         Data.Sueboops = ++Data.Sueboops
@@ -118,6 +146,11 @@ client.on(Events.MessageCreate, async message =>{
         Data.Mikapats = ++Data.Mikapats
         Write(Data)
          client.channels.fetch(message.channelId).then(channel => channel.send(`mika has been pet ${Data.Mikapats} times!`))
+    }
+    if (message.content === "<:wboop:886452053239562262>"){
+        Data.Wizardboops = ++Data.Wizardboops
+        Write(Data)
+            client.channels.fetch(message.channelId).then(channel => channel.send(`W1zard has been booped ${Data.Wizardboops} times!`))
     }
 
     if (message.content === "<:zingypat:907383379039756358>"){
@@ -159,11 +192,12 @@ console.log(`%cDISCORD ${message.author.username}: ${message.content}`, 'color: 
 
 //start Twitch bot
 const listener = new EventSubWsListener({ apiClient });
+listener.start()
 const onlineSubscription = listener.onStreamOnline(usrId, e =>{
     console.log(`${e.broadcasterDisplayName} just went live`)
 })
 
-listener.start()
+
 
 
 await authProvider.addUserForToken(tokenData, ['chat']);
