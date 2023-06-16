@@ -4,3 +4,5 @@ node_modules
 OpenAI_key.txt
 .Twitch/
 .env
+package-lock.json
+tokens.526128405.json
