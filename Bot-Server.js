@@ -4,16 +4,21 @@ const token = process.env.DISCORD_TOKEN;
 import { Client, Events, GatewayIntentBits } from "discord.js";
 import { Data } from "./Database/Data.js";
 import { Write } from './Utils/Writedata.js';
-import { image, chat as _chat } from "./Utils/AI.js";
-const StreamChannelId = '827624206694481961';
+import { image, chatold, chat as _chat } from "./Utils/AI.js";
+import fetch from 'node-fetch';
+import { registeruser, setpersona, pushconvo, grabconvo, ifexsists, clear, unreg} from './Utils/datacontrol/datacontrol.js';
+import db from "./config/connection.js"
+import helpmessage from './Utils/help.js';
 //twitch
 import { ApiClient } from '@twurple/api';
 import { RefreshingAuthProvider } from '@twurple/auth';
 import { Bot, createBotCommand } from '@twurple/easy-bot';
 import { promises as fs } from 'fs';
-import { EventSubWsListener } from '@twurple/eventsub-ws';
 import { env } from "process";
-const usrId = '74719300'
+import { Wizlistener} from "./Utils/WizListner.js"
+import { Suelistener} from "./Utils/SueListner.js"
+import { get } from 'http';
+const WizusrId = '74719300'
 const clientId = env.TWITCH_CLIENT_ID;
 const clientSecret = env.TWITCH_CLIENT_SECRET;
 const tokenData = JSON.parse(await fs.readFile('./Utils/tokens.526128405.json', 'UTF-8'));
@@ -33,14 +38,23 @@ const client  = new Client({
         GatewayIntentBits.MessageContent
     ]
 });
+db.once('open', () => {console.log('connected to database')})
 client.on(Events.ClientReady, function (c) {
     console.log(`${c.user.tag} is online`);
 });
+async function gamecheck () {
+    try {
+        const response = await fetch("localhost:3001/api/GamesTable/1")
+        const json = await response.json();
+        console.log(json);
+    } catch (error) {
+        console.log(error);
+    }
+}
 client.on(Events.MessageCreate, async message =>{
     if (message.content === "!patdat"){
-        console.log("Data message identified")
-        // console.log(Data)
-        client.channels.fetch(message.channelId).then(channel => channel.send(`Suepats: ${Data.Suepats}\nWizpats: ${Data.Wizpats}\nKarapats: ${Data.Karapats}\nIcepats: ${Data.Icepats}\nMikapats: ${Data.Mikapats}\nZingypats: ${Data.Zingypats}\nSueboops: ${Data.Sueboops}`));
+        //console.log("Data message identified")
+        client.channels.fetch(message.channelId).then(channel => channel.send(`Suepats: ${Data.Suepats}\nWizpats: ${Data.Wizpats}\nKarapats: ${Data.Karapats}\nIcepats: ${Data.Icepats}\nMikapats: ${Data.Mikapats}\nZingypats: ${Data.Zingypats}\nSueboops: ${Data.Sueboops}\nWizboops: ${Data.Wizardboops}`));
     }
 
     if(message.content.substring(0,6) === "!image") {
@@ -53,63 +67,175 @@ client.on(Events.MessageCreate, async message =>{
             client.channels.fetch(message.channelId).then(channel => channel.send({files: [{ attachment: awnser, name: 'image.png' }]}))
         }
     }
+// datacontrol
+    if (message.content.substring(0, 4) === "!reg"){
+        console.log("register message identified")
+        try {
+        //client.channels.fetch(message.channelId).then(channel => channel.send("registerd!"))
+        await registeruser(message.author.username)
+        } catch (error) {
+            //console.log(error)
+            client.channels.fetch(message.channelId).then(channel => channel.send("error! it appears you are already registered!"))
+        }
+    }
 
+    if (message.content.startsWith('!persona')) {
+        console.log("persona message identified")
+        var exists = await ifexsists(message.author.username)
+        if (exists == null){client.channels.fetch(message.channelId).then(channel => channel.send("You are not registered please use !reg"))}
+        else {
+        try {
+        //client.channels.fetch(message.channelId).then(channel => channel.send("registerd!"))
+        await setpersona(message.author.username, message.content.substring(8))
+        } catch (error) {
+            console.log(error)
+        }
+        }
+    }
+
+    if (message.content.startsWith('!clear')) {
+        console.log("clear message identified")
+        var exists = await ifexsists(message.author.username)
+        if (exists == null){client.channels.fetch(message.channelId).then(channel => channel.send("You are not registered please use !reg"))}
+        else {
+        try {
+        await clear(message.author.username)
+        } catch (error) {
+            console.log(error)
+        }
+        }
+    }
+
+    if (message.content.startsWith('!unreg')) {
+        console.log("unreg message identified")
+        var exists = await ifexsists(message.author.username)
+        if (exists == null){client.channels.fetch(message.channelId).then(channel => channel.send("You are not registered please use !reg"))}
+        else {
+        try {
+        await unreg(message.author.username)
+        } catch (error) {
+            console.log(error)
+        }
+        }
+    }
+
+//end data control
     if (message.content.substring(0, 3) === "!ai"){
-        //console.log("ai message identified")
-        const prompt = [{role:"user", content: message.content.substring(3)}];
-        var awnser = await _chat(prompt);
+ console.log("ai message identified")
+    const prompt = message.content.substring(4);
+    // {role:"user", content: message.content.substring(3)};
+    var awnser = await chatold(prompt);
 
-        if (awnser.substring(0,6) == "Error:"){
-            client.channels.fetch(message.channelId).then(channel => channel.send("An Error has occured! I cannot awnser"))
-        }
-        else{
-            while (awnser.length > 0) {
-                let chunk = awnser.substring(0, 2000);
-                if (awnser.length > 2000) {
-                    while (chunk.charAt(chunk.length - 1) !== " " && chunk.length > 1){
-                        chunk = chunk.substring(0, chunk.length - 1);
-                    }
+    if (awnser.substring(0,6) == "Error:"){
+        client.channels.fetch(message.channelId).then(channel => channel.send("An Error has occured! I cannot awnser"))
+    }
+    else{
+        while (awnser.length > 0) {
+            let chunk = awnser.substring(0, 2000);
+            if (awnser.length > 2000) {
+                while (chunk.charAt(chunk.length - 1) !== " " && chunk.length > 1){
+                    chunk = chunk.substring(0, chunk.length - 1);
+                }
 
-                    client.channels.fetch(message.channelId).then(chennel => channel.send(chunk));
-                    awnser = awnser.substring(chunk.length);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-                else {
-                    client.channels.fetch(message.channelId).then(channel => channel.send(awnser));
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    awnser = "";
-                }
+                client.channels.fetch(message.channelId).then(channel => channel.send(chunk));
+                awnser = awnser.substring(chunk.length);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            else {
+                client.channels.fetch(message.channelId).then(channel => channel.send(awnser));
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                awnser = "";
             }
         }
     }
-    if (message.content.substring(0, 4) === "!hat"){
-        //console.log("hat message identified")
-        const prompt = [{role:"user", content: message.content.substring(3)}];
-        var awnser = await _chat(prompt);
+}
+    if (message.content.startsWith('!hat')){
+        console.log("hat message identified")
+        const prompt = message.content.substring(5);
+        const username = message.author.username
+        const exsists = await ifexsists(username)
+        // console.log(exsists)
+        if (exsists == null){
+            //console.log("user not found chat old started")
+            var awnser = await chatold(prompt);
 
-        if (awnser.substring(0,6) == "Error:"){
-            client.channels.fetch(message.channelId).then(channel => channel.send("An Error has occured! I cannot awnser"))
-        }
-        else{
-            while (awnser.length > 0) {
-                let chunk = awnser.substring(0, 2000);
-                if (awnser.length > 2000) {
-                    while (chunk.charAt(chunk.length - 1) !== " " && chunk.length > 1){
-                        chunk = chunk.substring(0, chunk.length - 1);
-                    }
+    if (awnser.substring(0,6) == "Error:"){
+        client.channels.fetch(message.channelId).then(channel => channel.send("An Error has occured! I cannot awnser"))
+    }
+    else{
+        while (awnser.length > 0) {
+            let chunk = awnser.substring(0, 2000);
+            if (awnser.length > 2000) {
+                while (chunk.charAt(chunk.length - 1) !== " " && chunk.length > 1){
+                    chunk = chunk.substring(0, chunk.length - 1);
+                }
 
-                    client.channels.fetch(message.channelId).then(chennel => channel.send(chunk));
-                    awnser = awnser.substring(chunk.length);
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-                else {
-                    client.channels.fetch(message.channelId).then(channel => channel.send(awnser));
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    awnser = "";
-                }
+                client.channels.fetch(message.channelId).then(channel => channel.send(chunk));
+                awnser = awnser.substring(chunk.length);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            else {
+                client.channels.fetch(message.channelId).then(channel => channel.send(awnser));
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                awnser = "";
             }
         }
     }
+        }
+        else { 
+            //console.log("user found chat started")
+        grabconvo(username).then(async function (userdata){
+            var conversation = [
+                {role: 'assistant', content: userdata.persona},
+            ]
+            for (let i = 0; i < userdata.conversation.length; i++) {
+                conversation.push({role: "user", content: userdata.conversation[i]})
+            }
+            conversation.push({role: "user", content: prompt})
+            console.log(conversation)
+
+            var awnser = await _chat(conversation);
+
+            if (awnser.substring(0,6) == "Error:"){
+                client.channels.fetch(message.channelId).then(channel => channel.send("An Error has occured! I cannot awnser"))
+            }
+            else{
+                while (awnser.length > 0) {
+                    let chunk = awnser.substring(0, 2000);
+                    if (awnser.length > 2000) {
+                        while (chunk.charAt(chunk.length - 1) !== " " && chunk.length > 1){
+                            chunk = chunk.substring(0, chunk.length - 1);
+                        }
+        
+                        client.channels.fetch(message.channelId).then(channel => channel.send(chunk));
+                        awnser = awnser.substring(chunk.length);
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    else {
+                        client.channels.fetch(message.channelId).then(channel => channel.send(awnser));
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        awnser = "";
+                    }
+                }
+            }
+        })
+        pushconvo(username, prompt)
+        }
+    }
+
+    if (message.content.substring(0, 5) === "!game"){
+        try {
+            // fetch to Gamerli https://github.com/GameW1zard/GamerLi
+            const response = await fetch("http://127.0.0.1:3001/api/GamesTable/1")
+            const gamelist = await response.json();
+            var game = gamelist[Math.floor(Math.random() * gamelist.length)];
+            client.channels.fetch(message.channelId).then(channel => channel.send(`A random game that the W1zard should play is ${game.game_name}`));
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+
 
     if (message.content === "<:boop:866867768536334366>"){
         Data.Sueboops = ++Data.Sueboops
@@ -174,7 +300,7 @@ client.on(Events.MessageCreate, async message =>{
 
     if (message.content === "!help"){
         console.log("Help message identified")
-        client.channels.fetch(message.channelId).then(channel => channel.send(`Hello! I am Hatbot I am a work in progress project by GameW1zard!\nI can do a few things check it out\n"!patdat": Will show you all the data i track in the server im in!\n"is sue cute": i can awnser the most inportant question of all!\n"!ai": start your prompt with !ai and ask the bot ~~almost~~ any question you want!\n"!image": Give me a prompt and i will do my best to draw it (i only have 3 crayons)\nPokeAPI integration is planned in the future. Have fun!`));
+        client.channels.fetch(message.channelId).then(channel => channel.send(helpmessage));
     }
     
     if (message.content === "is sue cute?"){
@@ -184,20 +310,39 @@ client.on(Events.MessageCreate, async message =>{
 });
 
 client.on(Events.MessageCreate, async message =>{
-//const StreamChannel = await client.channels.fetch("827624206694481961")
+
 console.log(`%cDISCORD ${message.author.username}: ${message.content}`, 'color: #ADD8E6')
-//StreamChannel.send("hello")
+
 })
 //end discord bot
 
 //start Twitch bot
-const listener = new EventSubWsListener({ apiClient });
-listener.start()
-const onlineSubscription = listener.onStreamOnline(usrId, e =>{
+function wizgolive () {
+Wizlistener.start()
+let onlineSubscription = Wizlistener.onStreamOnline(WizusrId, e =>{
+    let StreamChannel = "827624206694481961"
     console.log(`${e.broadcasterDisplayName} just went live`)
+    client.channels.fetch(StreamChannel).then(function (channel){
+        channel.send(`@everyone The W1zard has gone live! Come join his magical adventures at
+        https://twitch.tv/Game_W1zard`)
+    });
 })
+}
+wizgolive()
 
-
+function suegolive () {
+Suelistener.start()
+let SueusrId = "24641514"
+let onlineSubscription = Suelistener.onStreamOnline(SueusrId, e =>{
+    let StreamChannel = "827624206694481961"
+    console.log(`${e.broadcasterDisplayName} just went live`)
+    client.channels.fetch(StreamChannel).then(function (channel){
+        channel.send(` The adorable Sue has gone live! Come join her adventures at
+        https://twitch.tv/time_spirit_suegoy`)
+    });
+})
+}
+// suegolive()
 
 
 await authProvider.addUserForToken(tokenData, ['chat']);
