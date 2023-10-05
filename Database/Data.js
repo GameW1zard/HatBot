@@ -1,13 +1,14 @@
 
         var Data = {
-            Suepats: 14,
-            Wizpats: 7,
-            Karapats: 55,
-            Icepats: 5,
-            Sueboops: 123,
-            Mikapats: 3,
-            Zingypats: 14,
-            Wizardboops: 1,
+            Suepats: 23,
+            Wizpats: 19,
+            Karapats: 58,
+            Icepats: 7,
+            Sueboops: 168,
+            Mikapats: 6,
+            Zingypats: 16,
+            Wizardboops: 23,
+            Urnpats: 1,
         }
 
          const _Data = Data
