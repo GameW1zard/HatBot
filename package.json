@@ -16,7 +16,9 @@
     "@twurple/eventsub-ws": "^7.0.5",
     "discord.js": "^14.13.0",
     "dotenv": "^16.3.1",
+    "image-downloader": "^4.3.0",
     "mongoose": "^8.0.0",
-    "openai": "^4.17.4"
+    "openai": "^4.17.4",
+    "path": "^0.12.7"
   }
 }

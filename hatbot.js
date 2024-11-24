@@ -1,9 +1,14 @@
 //dotenv inports
 import 'dotenv/config';
 //file imports
-import {chat,image} from "./ai.js"
+import {chat,imagesend} from "./ai.js"
 import {registeruser, setpersona, pushconvo, grabconvo, ifexsists, clear, unreg} from "./utils/datacontrol/datacontrol.js"
 import {Print} from "./utils/Print.js"
+import fs from 'fs';
+//inky imports
+import {spawn} from 'child_process';
+import { image } from 'image-downloader';
+import pathModule from 'path';
 // discord inports
 import {Client,Events,GatewayIntentBits,ChannelType} from 'discord.js';
 // twitch imports
@@ -11,7 +16,28 @@ import {Client,Events,GatewayIntentBits,ChannelType} from 'discord.js';
 //BEGIN DB
 import db from "./config/connection.js"
 import { set } from 'mongoose';
+import path from 'path';
 db.once('open', () => {console.log('connected to database')})
+//BEGIN CHILD PROCESS
+
+async function runpy (scriptPath, args) {
+    return new Promise((resolve, reject) => {
+        const process = spawn('python3', [scriptPath, args]);
+        process.stdout.on('data', (data) => {
+            resolve(data.toString());
+        });
+        process.stderr.on('data', (data) => {
+            reject(data.toString());
+        });
+        process.on('close', (code) => {
+            console.log(`child process exited with code ${code}`);
+        });
+    });
+}
+
+//console.log(runpy('/home/pi/Pimoroni/inky/examples/what/dither-image-what.py', '/home/pi/NodeServers/Hat bot .02/images/image.png'));
+
+
 //BEGIN DISCORD
 
 const sendChunks = async (channel, awnser) => {
@@ -128,7 +154,8 @@ client.on(Events.MessageCreate, async function (message) {
             }
             break;
             case message.content.startsWith("!image"):
-
+                const imgpath = pathModule.resolve( "images",'image.png');
+                
                 await channel.sendTyping()
                 const intervalId = setInterval(async () => {
                 await channel.sendTyping();
@@ -136,9 +163,21 @@ client.on(Events.MessageCreate, async function (message) {
                 }, 9000);
 
                 console.log (`image requested`)
-                let awnser = await image (message.content.slice(7))
-                const send = await channel.send(awnser);
+                let awnser = await imagesend (message.content.slice(7))
+                //const send = await channel.send(awnser);
+                let  options = {
+                    url: awnser,
+                    dest: imgpath
+                }
 
+               image(options).then(({}) => {
+                channel.send({ files: [imgpath] });
+                }).catch((err) => {
+                console.error(err);
+                });
+                setTimeout(function () {
+                runpy('/home/pi/Pimoroni/inky/examples/what/dither-image-what2.py');
+                }, 3000)
                 clearInterval(intervalId);
                 
                 break;

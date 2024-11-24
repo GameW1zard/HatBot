@@ -14,7 +14,7 @@ async function chat (prompt){
     }
     return awnser;
 }
-async function image (prompt){
+async function imagesend (prompt){
     
     let awnser;
     try {
@@ -33,4 +33,4 @@ async function image (prompt){
 }
 
 export {chat};
-export {image};
+export {imagesend};
